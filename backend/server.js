@@ -3,6 +3,10 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const authRoutes = require('./routes/auth');
+const projectRoutes = require('./routes/projects');
+const taskRoutes = require('./routes/tasks');
+
 const app = express();
 const port = process.env.PORT || 5002;
 const mongoUri = process.env.MONGO_URI;
@@ -10,6 +14,10 @@ const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 
 app.use(cors({ origin: clientUrl }));
 app.use(express.json());
+
+app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/tasks', taskRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'CodeAlpha Project Management Tool API' });
