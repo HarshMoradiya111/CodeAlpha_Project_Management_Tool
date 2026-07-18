@@ -44,6 +44,40 @@ router.put('/:id', protect, async (req, res) => {
   }
 });
 
+router.get('/project/:projectId', protect, async (req, res) => {
+  try {
+    const tasks = await Task.find({ project: req.params.projectId })
+      .populate('assignee', 'name email')
+      .populate({
+        path: 'comments',
+        populate: { path: 'user', select: 'name email' },
+      })
+      .sort({ createdAt: -1 });
+
+    return res.json(tasks.map(serializeTask));
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to fetch tasks.', error: error.message });
+  }
+});
+
+router.get('/:id/comments', protect, async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found.' });
+    }
+
+    const comments = await Comment.find({ task: task._id })
+      .populate('user', 'name email')
+      .sort({ createdAt: 1 });
+
+    return res.json(comments);
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to fetch comments.', error: error.message });
+  }
+});
+
 router.delete('/:id', protect, async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);

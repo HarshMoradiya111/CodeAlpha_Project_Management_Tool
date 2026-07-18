@@ -49,6 +49,30 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+router.get('/:id', protect, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id)
+      .populate('owner', 'name email')
+      .populate('members', 'name email');
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found.' });
+    }
+
+    const isMember =
+      project.owner._id.toString() === req.user._id.toString() ||
+      project.members.some((member) => member._id.toString() === req.user._id.toString());
+
+    if (!isMember) {
+      return res.status(403).json({ message: 'Project membership required.' });
+    }
+
+    return res.json(serializeProject(project));
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to fetch project.', error: error.message });
+  }
+});
+
 router.post('/:id/invite', protect, async (req, res) => {
   try {
     const { email } = req.body;

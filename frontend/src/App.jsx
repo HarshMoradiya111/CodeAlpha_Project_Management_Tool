@@ -1,46 +1,22 @@
-const highlights = [
-  'Projects, members, tasks, and comments',
-  'JWT auth and project membership checks',
-  'MongoDB schemas for boards and cards',
-  'Kanban board UI and drag-and-drop in later phases',
-];
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProjectsPage from './pages/ProjectsPage';
+import BoardPage from './pages/BoardPage';
+import AuthPage from './pages/AuthPage';
 
 function App() {
   return (
-    <main className="page-shell">
-      <section className="hero-card">
-        <p className="eyebrow">CodeAlpha Internship</p>
-        <h1>CodeAlpha Project Management Tool</h1>
-        <p className="intro">
-          Phase 1 scaffold is ready. The repo is split into backend and frontend
-          folders so the next phases can focus on board logic, task assignment,
-          and collaboration workflows.
-        </p>
-        <div className="status-row">
-          <span className="status-pill">Phase 1 complete</span>
-          <span className="status-note">Waiting for your confirmation before Phase 2</span>
-        </div>
-      </section>
-
-      <section className="info-grid">
-        <article className="info-card">
-          <h2>Backend</h2>
-          <p>Express server with MongoDB connection wiring and a health endpoint.</p>
-        </article>
-        <article className="info-card">
-          <h2>Frontend</h2>
-          <p>React + Vite starter prepared for project boards and task views.</p>
-        </article>
-        <article className="info-card">
-          <h2>Next work</h2>
-          <ul>
-            {highlights.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </article>
-      </section>
-    </main>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<ProjectsPage />} />
+          <Route path="/project/:id" element={<BoardPage />} />
+          <Route path="/login" element={<AuthPage initialMode="login" />} />
+          <Route path="/register" element={<AuthPage initialMode="register" />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
