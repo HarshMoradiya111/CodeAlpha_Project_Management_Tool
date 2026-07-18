@@ -17,6 +17,10 @@ function serializeProject(project) {
   };
 }
 
+function emitProjectEvent(req, projectId, event, payload) {
+  req.app.locals.io?.to(projectId.toString()).emit(event, payload);
+}
+
 router.post('/', protect, async (req, res) => {
   try {
     const { name } = req.body;
@@ -136,6 +140,20 @@ router.post('/:id/tasks', protect, async (req, res) => {
       description: description || '',
       assignee: assignee || null,
       status: status || 'todo',
+    });
+
+    emitProjectEvent(req, project._id, 'task-created', {
+      task: {
+        id: task._id,
+        project: task.project,
+        title: task.title,
+        description: task.description,
+        assignee: task.assignee,
+        status: task.status,
+        comments: task.comments,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+      },
     });
 
     return res.status(201).json({

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiRequest } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { createSocket } from '../socket';
 
 const statusColumns = [
   { key: 'todo', label: 'To Do' },
@@ -25,6 +26,7 @@ function BoardPage() {
 
   useEffect(() => {
     let active = true;
+    let socket;
 
     async function loadBoard() {
       try {
@@ -54,10 +56,47 @@ function BoardPage() {
       loadBoard();
     }
 
+    if (isAuthenticated && token) {
+      socket = createSocket(token);
+      socket.on('connect', () => {
+        socket.emit('join-room', id);
+      });
+
+      socket.on('task-created', (payload) => {
+        setTasks((currentTasks) => [payload.task, ...currentTasks]);
+      });
+
+      socket.on('task-updated', (payload) => {
+        setTasks((currentTasks) =>
+          currentTasks.map((task) => (task.id === payload.task.id ? payload.task : task))
+        );
+      });
+
+      socket.on('task-deleted', (payload) => {
+        setTasks((currentTasks) => currentTasks.filter((task) => task.id !== payload.taskId));
+        setSelectedTask((currentTask) => (currentTask?.id === payload.taskId ? null : currentTask));
+      });
+
+      socket.on('comment-created', (payload) => {
+        setTasks((currentTasks) =>
+          currentTasks.map((task) =>
+            task.id === payload.taskId
+              ? { ...task, comments: [...task.comments, payload.comment] }
+              : task
+          )
+        );
+
+        setTaskComments((currentComments) =>
+          selectedTask?.id === payload.taskId ? [...currentComments, payload.comment] : currentComments
+        );
+      });
+    }
+
     return () => {
       active = false;
+      socket?.disconnect();
     };
-  }, [id, isAuthenticated, token]);
+  }, [id, isAuthenticated, token, selectedTask?.id]);
 
   const columns = useMemo(
     () =>

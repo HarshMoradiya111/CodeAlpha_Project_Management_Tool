@@ -19,6 +19,10 @@ function serializeTask(task) {
   };
 }
 
+function emitProjectEvent(req, projectId, event, payload) {
+  req.app.locals.io?.to(projectId.toString()).emit(event, payload);
+}
+
 router.put('/:id', protect, async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -37,6 +41,10 @@ router.put('/:id', protect, async (req, res) => {
       },
       { new: true }
     );
+
+    emitProjectEvent(req, updatedTask.project, 'task-updated', {
+      task: serializeTask(updatedTask),
+    });
 
     return res.json(serializeTask(updatedTask));
   } catch (error) {
@@ -89,6 +97,10 @@ router.delete('/:id', protect, async (req, res) => {
     await Comment.deleteMany({ task: task._id });
     await task.deleteOne();
 
+    emitProjectEvent(req, task.project, 'task-deleted', {
+      taskId: task._id.toString(),
+    });
+
     return res.json({ message: 'Task deleted successfully.' });
   } catch (error) {
     return res.status(500).json({ message: 'Failed to delete task.', error: error.message });
@@ -117,6 +129,16 @@ router.post('/:id/comments', protect, async (req, res) => {
 
     task.comments.push(comment._id);
     await task.save();
+
+    emitProjectEvent(req, task.project, 'comment-created', {
+      taskId: task._id.toString(),
+      comment: {
+        _id: comment._id,
+        user: req.user._id,
+        text: comment.text,
+        createdAt: comment.createdAt,
+      },
+    });
 
     return res.status(201).json(comment);
   } catch (error) {
